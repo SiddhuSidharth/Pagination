@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      font-family: sans-serif;
+      padding: 25px;
+      background: #fff;
+      color: #111;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color:black;
+    }
+
+    *,
+    *::after,
+    *::before {
+      box-sizing: border-box;
+    }
+
+    button {
+      background: none;
+     
+      cursor: pointer;
+    }
+
+    .page-btn {
+      background: #ddd;
+      color: #2c303a;
+      height: 35px;
+      border-radius: 2px;
+      transition: background 0.3s ease;
+      margin: 0 2px;
+    }
+
+    .page-btn:first-of-type {
+      margin-left: 0;
+    }
+
+   
+    .pagination-buttons {
+      display: flex;
+      
+    }
+
+  
+
+    .page-btn.active {
+      background: blueviolet;
+      
+    }
+
+  </style>
+</head>
+<body>
+  <div class="pagination-buttons"></div>
+  <script>
+  
+    const generatePageNumbers = (total, max, current) => {
+      const half = Math.floor(max / 2);
+      let to = max;
+
+      if (current + half >= total) {
+        to = total;
+      } else if (current > half) {
+        to = current + half;
+      }
+
+      let from = Math.max(to - max, 0);
+
+      return Array.from({ length: Math.min(total, max) }, (_, i) => i + 1 + from);
+    }
+
+    
+    function PaginationButton(totalPages, maxi = 10, onPage = 1) {
+      let pages = generatePageNumbers(totalPages, maxi, onPage);
+      let onbutton = null;
+      const buttons = new Map();
+      const disabled = {
+        prev: () => onPage === 1 || onPage > totalPages,
+        next: () => onPage >= totalPages
+      }
+      const res = document.createDocumentFragment();
+      const button = document.querySelector('.pagination-buttons');
+      button.innerHTML = ''; 
+
+      const createAndSetupButton = (label = '', cls = '', disabled = false, handleClick) => {
+        const result = document.createElement('button');
+        result.textContent = label;
+        result.className = `page-btn ${cls}`;
+        result.disabled = disabled;
+        result.addEventListener('click', e => {
+          handleClick(e);
+          this.update();
+          button.value = onPage;
+          button.dispatchEvent(new CustomEvent('change', { detail: { onbutton } }));
+        });
+
+        return result;
+      }
+
+      const onPageButtonClick = e => onPage = Number(e.currentTarget.textContent);
+
+      const onPageButtonUpdate = index => (btn) => {
+        btn.textContent = pages[index];
+
+         if (pages[index] === onPage) {
+          onbutton.classList.remove('active');
+          btn.classList.add('active');
+          onbutton = btn;
+          onbutton.focus();
+        } 
+      };
+
+      buttons.set(
+        createAndSetupButton('prev', 'prev-page', disabled.prev(), () => onPage -= 1),
+        (btn) => btn.disabled = disabled.prev()
+      )
+
+      pages.forEach((pageNumber, index) => {
+        const isonPage = onPage === pageNumber;
+        const button = createAndSetupButton(
+          pageNumber.toString(), isonPage ? 'active' : '', false, onPageButtonClick
+        );
+
+        if (isonPage) {
+          onbutton = button;
+        }
+
+        buttons.set(button, onPageButtonUpdate(index));
+      });
+
+      buttons.set(
+        createAndSetupButton('next', 'next-page', disabled.next(), () => onPage += 1),
+        (btn) => btn.disabled = disabled.next()
+      )
+
+      buttons.forEach((_, btn) => res.appendChild(btn));
+      button.appendChild(res);
+
+      this.update = (newPageNumber = onPage) => {
+        onPage = newPageNumber;
+        pages = generatePageNumbers(totalPages, maxi, onPage);
+        buttons.forEach((updateButton, btn) => updateButton(btn));
+      }
+
+      this.onChange = (handler) => {
+        button.addEventListener('change', handler);
+      }
+    }
+
+    const paginationButtons = new PaginationButton(10, 5);
+    paginationButtons.update(); 
+
+ 
+  </script>
+</body>
+</html>
